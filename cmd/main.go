@@ -80,6 +80,34 @@ func GetPost(response http.ResponseWriter, request *http.Request, param httprout
 
 }
 
+func DeletePost(response http.ResponseWriter, request *http.Request, param httprouter.Params) {
+	response.Header().Add("Content-Type", "application/json")
+
+	id, _ := primitive.ObjectIDFromHex(param.ByName("id"))
+
+	collection := client.Database("blog").Collection("posts")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	result, err := collection.DeleteOne(ctx, Post{ID: id})
+	if err != nil {
+		panic(err)
+	}
+	json.NewEncoder(response).Encode(result)
+
+}
+
+func UpdatePost(response http.ResponseWriter, request *http.Request, param httprouter.Params) {
+	response.Header().Add("Content-Type", "application/json")
+
+	id, _ := primitive.ObjectIDFromHex(param.ByName("id"))
+	var post Post
+	collection := client.Database("blog").Collection("posts")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	json.NewEncoder(response).Encode(post)
+
+}
+
 func main() {
 	fmt.Println("Starting the application")
 	//Connect to MongoDB
@@ -87,38 +115,16 @@ func main() {
 
 	client, _ = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 
-	//collection := client.Database("blog").Collection("posts")
-
-	//docs := []interface{}{
-	//	bson.D{{"title", "World"}, {"body", "Hello world"}},
-	//	bson.D{{"title", "Mars"}, {"body", "Hello Mars"}},
-	//	bson.D{{"title", "Pluto"}, {"body", "Hello Pluto"}},
-	//}
-	//
-	//result, insertErr := collection.InsertMany(ctx, docs)
-	//if insertErr != nil {
-	//	log.Fatal(insertErr)
-	//}
-	//fmt.Println(result)
-
-	//cursor, currErr := collection.Find(ctx, bson.D{})
-	//if currErr != nil {
-	//	panic(currErr)
-	//}
-	//defer cursor.Close(ctx)
-	//
-	//var posts []Post
-	//if err := cursor.All(ctx, &posts); err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println(posts)
-
 	server := httprouter.New()
 
 	server.GET("/posts", GetPosts)
 	server.GET("/posts/:id", GetPost)
 
 	server.POST("/post", CreatePost)
+
+	server.DELETE("/posts/:id", DeletePost)
+
+	server.PUT("/posts/:id", UpdatePost)
 
 	log.Fatal(http.ListenAndServe(portNumber, server))
 }
