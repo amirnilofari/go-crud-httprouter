@@ -100,11 +100,24 @@ func UpdatePost(response http.ResponseWriter, request *http.Request, param httpr
 	response.Header().Add("Content-Type", "application/json")
 
 	id, _ := primitive.ObjectIDFromHex(param.ByName("id"))
+
 	var post Post
+	json.NewDecoder(request.Body).Decode(&post)
+
 	collection := client.Database("blog").Collection("posts")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
-	json.NewEncoder(response).Encode(post)
+	result, err := collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.D{
+			{"$set", bson.D{{"title", post.Title}, {"body", post.Body}}},
+		})
+	if err != nil {
+		fmt.Println("ERROR IS : ", err)
+	}
+
+	json.NewEncoder(response).Encode(result)
 
 }
 
